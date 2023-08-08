@@ -12,7 +12,6 @@ author: Jeong-Uk Lee (@sch.ac.kr)
 
 import sys
 import math
-import time
 import rospy
 import timeit
 import signal
@@ -39,8 +38,12 @@ class ROS():
   def __init__(self):
     rospy.init_node('CPS_Formation_Maker')
     
+    self.leader_state = ''
+    self.robot2_state = ''
+    self.robot3_state = ''
+    
     self.leader_pos = PoseStamped()  ; self.robot2_pos = PoseStamped()  ; self.robot3_pos = PoseStamped()
-    self.leader_queue = Queue()      ; self.robot2_queue = Queue()      ; self.robot3_queue = Queue()
+    self.leader_pos_queue = Queue()  ; self.robot2_pos_queue = Queue()  ; self.robot3_pos_queue = Queue()
     self.leader_state_queue = Queue(); self.robot2_state_queue = Queue(); self.robot3_state_queue = Queue()
     
     
@@ -70,19 +73,19 @@ class ROS():
     
   
   def pos_callback(self, msg):
-    self.leader_queue.put(msg)
+    self.leader_pos_queue.put(msg)
     self.leader_pos = msg
     
     self.leader_position = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
     
   def pos2_callback(self, msg):
-    self.robot2_queue.put(msg)
+    self.robot2_pos_queue.put(msg)
     self.robot2_pos = msg
     
     self.robot2_position = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
     
   def pos3_callback(self, msg):
-    self.robot3_queue.put(msg)
+    self.robot3_pos_queue.put(msg)
     self.robot3_pos = msg
     
     self.robot3_position = [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z]
@@ -265,10 +268,10 @@ class ROS():
       pos3_history.append([self.robot3_pos.pose.position.x, self.robot3_pos.pose.position.y, self.robot3_pos.pose.position.z, \
                           self.robot3_pos.pose.orientation.x, self.robot3_pos.pose.orientation.y, self.robot3_pos.pose.orientation.z, self.robot3_pos.pose.orientation.w])
       
-      
+      r = rospy.Rate(10)
       if len(pos1_history) < 51:
         print('Averaging_poses')
-        time.sleep(0.1)
+        r.sleep()
         continue
       else:
         mean_x1 = 0.0; mean_y1 = 0.0; mean_z1 = 0.0; mean_ori_x1 = 0.0; mean_ori_y1 = 0.0; mean_ori_z1 = 0.0; mean_ori_w1 = 0.0
@@ -323,34 +326,35 @@ class ROS():
         mean_ori_y3 = mean_ori_y3 / len(pos3_history)
         mean_ori_z3 = mean_ori_z3 / len(pos3_history)
         mean_ori_w3 = mean_ori_w3 / len(pos3_history)
+
+
+        self.pos1_mean[0] = mean_x1
+        self.pos1_mean[1] = mean_y1
+        self.pos1_mean[2] = mean_z1
+        self.pos1_mean[3] = mean_ori_x1
+        self.pos1_mean[4] = mean_ori_y1
+        self.pos1_mean[5] = mean_ori_z1
+        self.pos1_mean[6] = mean_ori_w1
+        
+        self.pos2_mean[0] = mean_x2
+        self.pos2_mean[1] = mean_y2
+        self.pos2_mean[2] = mean_z2
+        self.pos2_mean[3] = mean_ori_x2
+        self.pos2_mean[4] = mean_ori_y2
+        self.pos2_mean[5] = mean_ori_z2
+        self.pos2_mean[6] = mean_ori_w2
+        
+        self.pos3_mean[0] = mean_x3
+        self.pos3_mean[1] = mean_y3
+        self.pos3_mean[2] = mean_z3
+        self.pos3_mean[3] = mean_ori_x3
+        self.pos3_mean[4] = mean_ori_y3
+        self.pos3_mean[5] = mean_ori_z3
+        self.pos3_mean[6] = mean_ori_w3
       
-      self.pos1_mean[0] = mean_x1
-      self.pos1_mean[1] = mean_y1
-      self.pos1_mean[2] = mean_z1
-      self.pos1_mean[3] = mean_ori_x1
-      self.pos1_mean[4] = mean_ori_y1
-      self.pos1_mean[5] = mean_ori_z1
-      self.pos1_mean[6] = mean_ori_w1
       
-      self.pos2_mean[0] = mean_x2
-      self.pos2_mean[1] = mean_y2
-      self.pos2_mean[2] = mean_z2
-      self.pos2_mean[3] = mean_ori_x2
-      self.pos2_mean[4] = mean_ori_y2
-      self.pos2_mean[5] = mean_ori_z2
-      self.pos2_mean[6] = mean_ori_w2
-      
-      self.pos3_mean[0] = mean_x3
-      self.pos3_mean[1] = mean_y3
-      self.pos3_mean[2] = mean_z3
-      self.pos3_mean[3] = mean_ori_x3
-      self.pos3_mean[4] = mean_ori_y3
-      self.pos3_mean[5] = mean_ori_z3
-      self.pos3_mean[6] = mean_ori_w3
-      
-      
-      print('Averaging_poses is completed!')
-      break
+        print('Averaging_poses is completed!')
+        break
   
   
   def rotation(self, point):
@@ -454,13 +458,13 @@ def main():
     else: break
   
   while 1:
-    if ros.leader_queue.empty() and Robot1: 
+    if ros.leader_pos_queue.empty() and Robot1: 
       print('Leader local pose is not subscribed!')
       continue
-    elif ros.robot2_queue.empty() and Robot2:
+    elif ros.robot2_pos_queue.empty() and Robot2:
       print('Robot2 state is not subscribed!')
       continue
-    elif ros.robot3_queue.empty() and Robot3:
+    elif ros.robot3_pos_queue.empty() and Robot3:
       print('Robot3 state is not subscribed!')
       continue
     else: break
@@ -480,18 +484,25 @@ def main():
   ros.averaging_poses()
   
   pos_index = 0
-  r = rospy.Rate(10)
-  
-  end_len = len(formation.uav1_pos_list)
+  r = rospy.Rate(5)
   
   start_time = timeit.default_timer()
   
   while not rospy.is_shutdown():
-    ros.rbt1_curr_pose_publish()
-    ros.rbt2_curr_pose_publish()
-    running_time = timeit.default_timer()
+    if Robot1:
+      ros.rbt1_curr_pose_publish()
+    if Robot2:
+      ros.rbt2_curr_pose_publish()
+    if Robot3:
+      ros.rbt3_curr_pose_publish()
+      
+    running_time = timeit.default_timer() - start_time
     
     cur_leader_pos = ros.leader_position
+    
+    if running_time < 5:  # 5초 동안 hovering
+      print('Hovering..')
+      pos_index = 0
     
     uav1_set_point = formation.uav1_pos_list[pos_index]
     uav2_set_point = formation.uav2_pos_list[pos_index]
@@ -501,17 +512,20 @@ def main():
     rotated_uav2_set_point = ros.rotation(uav2_set_point)
     rotated_uav3_set_point = ros.rotation(uav3_set_point)
     
-    ros.rbt1_setpoint_publish(rotated_uav1_set_point)
-    ros.rbt2_setpoint_publish(rotated_uav2_set_point)
-    ros.rbt3_setpoint_publish(rotated_uav3_set_point)
+    if Robot1:
+      ros.rbt1_setpoint_publish(rotated_uav1_set_point)
+    if Robot2:
+      ros.rbt2_setpoint_publish(rotated_uav2_set_point)
+    if Robot3:
+      ros.rbt3_setpoint_publish(rotated_uav3_set_point)
     
-    if running_time - start_time < 5:  # 5초 동안 hovering
-      print('Hovering..')
-      continue
+    # if running_time - start_time < 5:  # 5초 동안 hovering
+    #   print('Hovering..')
+    #   continue
     
     leader_2dim_distance = math.hypot(rotated_uav1_set_point[0] - cur_leader_pos[0], rotated_uav1_set_point[1] - cur_leader_pos[1])
     
-    if pos_index < 11:
+    if pos_index < 11 and running_time > 5:
       print('Formation 1')
     elif pos_index >= 11 and pos_index < 20:
       print('Formation 2')
@@ -532,7 +546,7 @@ def main():
     # print('Robot2 target pose', uav2_set_point)
     # print('Robot3 target pose', uav3_set_point)
     
-    # if leader_2dim_distance < 0.3:
+    # if leader_2dim_distance < 0.3 and pos_index < 60:
     if leader_2dim_distance < 5.0 and pos_index < 60:
       pos_index += 1
 
