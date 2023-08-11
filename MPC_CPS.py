@@ -21,7 +21,7 @@ import math
 import timeit
 
 from std_msgs.msg import ColorRGBA
-from nav_msgs.msg import Path
+from nav_msgs.msg import Path, Odometry
 from mavros_msgs.msg import State
 from geometry_msgs.msg import PoseStamped, Point
 from visualization_msgs.msg import Marker
@@ -187,9 +187,12 @@ class MPC():
     self.y_max = ca.inf; self.y_min = -self.y_max
     self.z_max = ca.inf; self.z_min = 0.0
     
-    self.dx_max = 0.8; self.dx_min = -self.dx_max
-    self.dy_max = 0.8; self.dy_min = -self.dy_max
-    self.dz_max = 0.8; self.dz_min = -self.dz_max
+    self.dx_max = 1.0; self.dx_min = -self.dx_max
+    self.dy_max = 1.0; self.dy_min = -self.dy_max
+    self.dz_max = 1.0; self.dz_min = -self.dz_max
+    # self.dx_max = 0.8; self.dx_min = -self.dx_max
+    # self.dy_max = 0.8; self.dy_min = -self.dy_max
+    # self.dz_max = 0.8; self.dz_min = -self.dz_max
     
     self.phi_max   = 12.0 * ca.pi/180; self.phi_min   = -self.phi_max
     self.theta_max = 12.0 * ca.pi/180; self.theta_min = -self.theta_max
@@ -270,7 +273,7 @@ class MPC():
     self.dx_init = 0.0;   self.dy_init = 0.0;     self.dz_init = 0.0
     self.dphi_init = 0.0; self.dtheta_init = 0.0; self.dpsi_init = 0.0
     
-    self.state_init = ca.DM([self.x_init, self.y_init, self.theta_init, self.phi_init, self.theta_init, self.psi_init, self.dx_init, self.dy_init, self.dz_init, self.dphi_init, self.dtheta_init, self.dpsi_init])
+    self.state_init = ca.DM([self.x_init, self.y_init, self.z_init, self.theta_init, self.phi_init, self.psi_init, self.dx_init, self.dy_init, self.dz_init, self.dphi_init, self.dtheta_init, self.dpsi_init])
     
     self.u0 = ca.DM.zeros(self.N, self.n_controls)
     self.X0 = ca.repmat(self.state_init, 1, self.N + 1)
@@ -386,7 +389,7 @@ class MPC():
   def get_result(self):
     self.X0 = ca.reshape( self.sol['x'][ : self.n_states * (self.N + 1)], self.n_states, self.N + 1 )
     self.u0 = ca.reshape( self.sol['x'][self.n_states * (self.N + 1) : ], self.n_controls, self.N )
-    # print('predict_state', self.X0[:, 8][0], self.X0[:, 8][1], self.X0[:, 8][2])
+    print('predict_state', self.X0[:, 8][0], self.X0[:, 8][1], self.X0[:, 8][2])
     # print('control_input', self.u0[:, 0])
     
     return self.X0, self.u0
@@ -410,7 +413,7 @@ class ROS():
     self.robot_name = 'UAV1'
     
     self.state_sub = rospy.Subscriber(self.robot_name + '/mavros/state', State, self.state_callback, queue_size = 1)
-    self.odom_sub  = rospy.Subscriber(self.robot_name + '/mavros/local_position/odom', PoseStamped, self.odom_callback, queue_size = 1)
+    self.odom_sub  = rospy.Subscriber(self.robot_name + '/mavros/local_position/odom', Odometry, self.odom_callback, queue_size = 1)
     
     if GPS:
       self.ref_sub = rospy.Subscriber(self.robot_name + '/GPS_based_ref_path', Path, self.ref_path_callback, queue_size = 1)
@@ -549,7 +552,7 @@ def main():
 
     mpc_finish_time = timeit.default_timer()
     
-    print('Runtime : {:.5f} s'.format(mpc_finish_time - mpc_start_time))
+    # print('Runtime : {:.5f} s'.format(mpc_finish_time - mpc_start_time))
     
     ros.predict_path_publish(result_X0, N_)
     ros.setpoint_publish(result_X0, 8)
