@@ -64,12 +64,12 @@ class ROS():
     self.robot1_path_pub = rospy.Publisher('UAV1/ref_path', Path, queue_size = 1)
     self.robot2_path_pub = rospy.Publisher('UAV2/ref_path', Path, queue_size = 1)
     self.robot3_path_pub = rospy.Publisher('UAV3/ref_path', Path, queue_size = 1)
-    self.target_pub = rospy.Publisher('target', Marker, queue_size=1)
     
     self.reference_GPS_based_pub = rospy.Publisher('Reference_GPS_based_path', Path, queue_size = 1)
     self.robot1_GPS_based_path_pub = rospy.Publisher('UAV1/GPS_based_ref_path', Path, queue_size = 1)
     self.robot2_GPS_based_path_pub = rospy.Publisher('UAV2/GPS_based_ref_path', Path, queue_size = 1)
     self.robot3_GPS_based_path_pub = rospy.Publisher('UAV3/GPS_based_ref_path', Path, queue_size = 1)
+    
     self.robot1_setpoint_pub = rospy.Publisher('UAV1/mavros/setpoint_position/local', PoseStamped, queue_size = 1)
     self.robot2_setpoint_pub = rospy.Publisher('UAV2/mavros/setpoint_position/local', PoseStamped, queue_size = 1)
     self.robot3_setpoint_pub = rospy.Publisher('UAV3/mavros/setpoint_position/local', PoseStamped, queue_size = 1)
@@ -152,7 +152,6 @@ class ROS():
         continue
 
       else:
-        print('sdajhflasdjf')
         if Robot1:
           for i in range(len(robot1_local_pos_history)):
             mean_x1     += robot1_local_pos_history[i][0]
@@ -354,10 +353,6 @@ class ROS():
     robot3_trajectory.header.frame_id = 'map'
     robot3_trajectory.header.stamp = rospy.Time.now()
     
-    ref_roll = 0.0; ref_pitch = 0.0; ref_yaw = 0.0
-    q = quaternion_from_euler(ref_roll, ref_pitch, ref_yaw)
-    q_normalized = q / np.linalg.norm(q)
-    
     robot1_start = [self.robot1_local_pos_mean[0], self.robot1_local_pos_mean[1]]
     robot2_start = [self.robot2_local_pos_mean[0], self.robot2_local_pos_mean[1]]
     robot3_start = [self.robot3_local_pos_mean[0], self.robot3_local_pos_mean[1]]
@@ -368,23 +363,23 @@ class ROS():
       pose_stamped.pose.position.x    = rotated_point[0] + self.robot1_local_pos_mean[0]
       pose_stamped.pose.position.y    = rotated_point[1] + self.robot1_local_pos_mean[1]
       pose_stamped.pose.position.z    = rotated_point[2] + self.robot1_local_pos_mean[2]
-      pose_stamped.pose.orientation.x = q_normalized[0] + self.robot1_local_pos_mean[3]
-      pose_stamped.pose.orientation.y = q_normalized[1] + self.robot1_local_pos_mean[4]
-      pose_stamped.pose.orientation.z = q_normalized[2] + self.robot1_local_pos_mean[5]
-      pose_stamped.pose.orientation.w = q_normalized[3] + self.robot1_local_pos_mean[6]
+      pose_stamped.pose.orientation.x = self.robot1_local_pos_mean[3]
+      pose_stamped.pose.orientation.y = self.robot1_local_pos_mean[4]
+      pose_stamped.pose.orientation.z = self.robot1_local_pos_mean[5]
+      pose_stamped.pose.orientation.w = self.robot1_local_pos_mean[6]
       robot1_trajectory.poses.append(pose_stamped)
+      
       
     pub_set_point_1 = PoseStamped()
     pub_set_point_1.header.frame_id = 'map'
     pub_set_point_1.header.stamp = rospy.Time.now()
-    pub_rotated_point = self.rotation(robot_1[0], robot1_start)
-    pub_set_point_1.pose.position.x    = pub_rotated_point[0] + self.robot1_local_pos_mean[0]
-    pub_set_point_1.pose.position.y    = pub_rotated_point[1] + self.robot1_local_pos_mean[1]
-    pub_set_point_1.pose.position.z    = pub_rotated_point[2] + self.robot1_local_pos_mean[2]
-    pub_set_point_1.pose.orientation.x = q_normalized[0] + self.robot1_local_pos_mean[3]
-    pub_set_point_1.pose.orientation.y = q_normalized[1] + self.robot1_local_pos_mean[4]
-    pub_set_point_1.pose.orientation.z = q_normalized[2] + self.robot1_local_pos_mean[5]
-    pub_set_point_1.pose.orientation.w = q_normalized[3] + self.robot1_local_pos_mean[6]
+    pub_set_point_1.pose.position.x    = robot1_trajectory.poses[0].pose.position.x
+    pub_set_point_1.pose.position.y    = robot1_trajectory.poses[0].pose.position.y
+    pub_set_point_1.pose.position.z    = robot1_trajectory.poses[0].pose.position.z
+    pub_set_point_1.pose.orientation.x = robot1_trajectory.poses[0].pose.orientation.x
+    pub_set_point_1.pose.orientation.y = robot1_trajectory.poses[0].pose.orientation.y
+    pub_set_point_1.pose.orientation.z = robot1_trajectory.poses[0].pose.orientation.z
+    pub_set_point_1.pose.orientation.w = robot1_trajectory.poses[0].pose.orientation.w
       
       
     for i in range(N_):
@@ -394,48 +389,47 @@ class ROS():
       pose_stamped.pose.position.x    = rotated_point[0] + self.robot2_local_pos_mean[0]
       pose_stamped.pose.position.y    = rotated_point[1] + self.robot2_local_pos_mean[1]
       pose_stamped.pose.position.z    = rotated_point[2] + self.robot2_local_pos_mean[2]
-      pose_stamped.pose.orientation.x = q_normalized[0] + self.robot2_local_pos_mean[3]
-      pose_stamped.pose.orientation.y = q_normalized[1] + self.robot2_local_pos_mean[4]
-      pose_stamped.pose.orientation.z = q_normalized[2] + self.robot2_local_pos_mean[5]
-      pose_stamped.pose.orientation.w = q_normalized[3] + self.robot2_local_pos_mean[6]
+      pose_stamped.pose.orientation.x = self.robot2_local_pos_mean[3]
+      pose_stamped.pose.orientation.y = self.robot2_local_pos_mean[4]
+      pose_stamped.pose.orientation.z = self.robot2_local_pos_mean[5]
+      pose_stamped.pose.orientation.w = self.robot2_local_pos_mean[6]
       robot2_trajectory.poses.append(pose_stamped)
       
     pub_set_point_2 = PoseStamped()
     pub_set_point_2.header.frame_id = 'map'
     pub_set_point_2.header.stamp = rospy.Time.now()
-    pub_rotated_point = self.rotation(robot_2[0], robot2_start)
-    robot_2[0][1] = robot_2[0][1] - 5.0
-    pub_set_point_2.pose.position.x    = pub_rotated_point[0] + self.robot2_local_pos_mean[0]
-    pub_set_point_2.pose.position.y    = pub_rotated_point[1] + self.robot2_local_pos_mean[1]
-    pub_set_point_2.pose.position.z    = pub_rotated_point[2] + self.robot2_local_pos_mean[2]
-    pub_set_point_2.pose.orientation.x = q_normalized[0] + self.robot2_local_pos_mean[3]
-    pub_set_point_2.pose.orientation.y = q_normalized[1] + self.robot2_local_pos_mean[4]
-    pub_set_point_2.pose.orientation.z = q_normalized[2] + self.robot2_local_pos_mean[5]
-    pub_set_point_2.pose.orientation.w = q_normalized[3] + self.robot2_local_pos_mean[6]
+    pub_set_point_2.pose.position.x   = robot2_trajectory.poses[0].pose.position.x
+    pub_set_point_2.pose.position.y   = robot2_trajectory.poses[0].pose.position.y
+    pub_set_point_2.pose.position.z   = robot2_trajectory.poses[0].pose.position.z
+    pub_set_point_2.pose.orientation.x = robot2_trajectory.poses[0].pose.orientation.x
+    pub_set_point_2.pose.orientation.y = robot2_trajectory.poses[0].pose.orientation.y
+    pub_set_point_2.pose.orientation.z = robot2_trajectory.poses[0].pose.orientation.z
+    pub_set_point_2.pose.orientation.w = robot2_trajectory.poses[0].pose.orientation.w
+
       
     for i in range(N_):
       pose_stamped = PoseStamped()
+      robot_3[i][1] = robot_3[i][1] + 5.0
       rotated_point = self.rotation(robot_3[i], robot3_start)
       pose_stamped.pose.position.x    = rotated_point[0] + self.robot3_local_pos_mean[0]
       pose_stamped.pose.position.y    = rotated_point[1] + self.robot3_local_pos_mean[1]
       pose_stamped.pose.position.z    = rotated_point[2] + self.robot3_local_pos_mean[2]
-      pose_stamped.pose.orientation.x = q_normalized[0] + self.robot3_local_pos_mean[3]
-      pose_stamped.pose.orientation.y = q_normalized[1] + self.robot3_local_pos_mean[4]
-      pose_stamped.pose.orientation.z = q_normalized[2] + self.robot3_local_pos_mean[5]
-      pose_stamped.pose.orientation.w = q_normalized[3] + self.robot3_local_pos_mean[6]
+      pose_stamped.pose.orientation.x = self.robot3_local_pos_mean[3]
+      pose_stamped.pose.orientation.y = self.robot3_local_pos_mean[4]
+      pose_stamped.pose.orientation.z = self.robot3_local_pos_mean[5]
+      pose_stamped.pose.orientation.w = self.robot3_local_pos_mean[6]
       robot3_trajectory.poses.append(pose_stamped)
       
     pub_set_point_3 = PoseStamped()
     pub_set_point_3.header.frame_id = 'map'
     pub_set_point_3.header.stamp = rospy.Time.now()
-    pub_rotated_point = self.rotation(robot_3[0], robot3_start)
-    pub_set_point_3.pose.position.x    = pub_rotated_point[0] + self.robot3_local_pos_mean[0]
-    pub_set_point_3.pose.position.y    = pub_rotated_point[1] + self.robot3_local_pos_mean[1]
-    pub_set_point_3.pose.position.z    = pub_rotated_point[2] + self.robot3_local_pos_mean[2]
-    pub_set_point_3.pose.orientation.x = q_normalized[0] + self.robot3_local_pos_mean[3]
-    pub_set_point_3.pose.orientation.y = q_normalized[1] + self.robot3_local_pos_mean[4]
-    pub_set_point_3.pose.orientation.z = q_normalized[2] + self.robot3_local_pos_mean[5]
-    pub_set_point_3.pose.orientation.w = q_normalized[3] + self.robot3_local_pos_mean[6]
+    pub_set_point_3.pose.position.x   = robot3_trajectory.poses[0].pose.position.x
+    pub_set_point_3.pose.position.y   = robot3_trajectory.poses[0].pose.position.y
+    pub_set_point_3.pose.position.z   = robot3_trajectory.poses[0].pose.position.z
+    pub_set_point_3.pose.orientation.x = robot3_trajectory.poses[0].pose.orientation.x
+    pub_set_point_3.pose.orientation.y = robot3_trajectory.poses[0].pose.orientation.y
+    pub_set_point_3.pose.orientation.z = robot3_trajectory.poses[0].pose.orientation.z
+    pub_set_point_3.pose.orientation.w = robot3_trajectory.poses[0].pose.orientation.w
     
     self.robot1_GPS_based_path_pub.publish(robot1_trajectory)
     self.robot2_GPS_based_path_pub.publish(robot2_trajectory)
@@ -677,7 +671,22 @@ class Formation():
         self.robot3_ref[i][1] = self.reference_[i][1] - 5.0
         self.robot3_ref[i][2] = self.reference_[i][2] + 2 - d
         
-    elif running_time >= change_time * 6:
+    elif running_time >= change_time * 6 and running_time < change_time * 7:
+      
+      for i in range(self.N):
+        self.robot1_ref[i][0] = self.reference_[i][0]
+        self.robot1_ref[i][1] = self.reference_[i][1]
+        self.robot1_ref[i][2] = self.reference_[i][2]
+        
+        self.robot2_ref[i][0] = self.reference_[i][0]
+        self.robot2_ref[i][1] = self.reference_[i][1] + 5.0
+        self.robot2_ref[i][2] = self.reference_[i][2]
+        
+        self.robot3_ref[i][0] = self.reference_[i][0]
+        self.robot3_ref[i][1] = self.reference_[i][1] - 5.0
+        self.robot3_ref[i][2] = self.reference_[i][2]
+        
+    elif running_time >= change_time * 7:
       if self.mode_6 == False:
         self.t6 = t
         self.mode_6 = True
@@ -688,10 +697,7 @@ class Formation():
       # print(self.t6, t, d, self.mode_6)
 
       for i in range(self.N):
-        self.robot1_ref[i][0] = self.reference_[i][0]
-        self.robot1_ref[i][1] = self.reference_[i][1]
-        self.robot1_ref[i][2] = self.reference_[i][2] - 1.0
-        
+
         self.robot1_ref[i][0] = self.reference_[i][0]
         self.robot1_ref[i][1] = self.reference_[i][1]
         self.robot1_ref[i][2] = self.reference_[i][2] - d
@@ -713,32 +719,13 @@ class Formation():
         self.robot3_ref[i][2] = self.reference_[i][2] - d
                 
     return self.robot1_ref, self.robot2_ref, self.robot3_ref
-    
-  def targetpublish(self, ros):
-    
-    marker = Marker()
-    marker.header.frame_id = 'map'
-    marker.header.stamp = rospy.Time.now()
-    
-    marker.id = 1
-    marker.type = Marker.POINTS
-    marker.action = Marker.ADD
-    marker.color = ColorRGBA(1, 0, 0, 0.5)
-    marker.scale.x = 0.5
-    marker.scale.y = 0.5
-    marker.scale.z = 0.5
-    
-    marker.points.append(Point(self.robot2_ref[0][0], self.robot2_ref[0][1], self.robot2_ref[0][2]))
-    ros.target_pub.publish(marker)
-    # print(self.robot2_ref[0][0], self.robot2_ref[0][1], self.robot2_ref[0][2])
-    # print('/n')
 
 def main():
   print(__file__ + ' Start !!')
   
   Robot1 = True
   Robot2 = True
-  Robot3 = False
+  Robot3 = True
   
   GPS_based = True
   
@@ -751,7 +738,7 @@ def main():
   
   formation_change_time = 15.0
   # (nominal_speed, time) : (0.3m/s, 15s), (0.5m/s, 10s)
-  formation_change_cnt = 6
+  formation_change_cnt = 7
   past_time = 0.0
   loop_cnt = 0
   t = 0
@@ -824,9 +811,9 @@ def main():
         print('Formation type : ' + GREEN + 'Formation 1' + END)
       elif running_time > formation_change_time * 4 and running_time <= formation_change_time * 5:
         print('Formation type : ' + GREEN + 'Formation 3' + END)
-      elif running_time > formation_change_time * 5 and running_time <= formation_change_time * 6:
+      elif running_time > formation_change_time * 5 and running_time <= formation_change_time * 7:
         print('Formation type : ' + GREEN + 'Formation 1' + END)
-      elif running_time > formation_change_time * 6:
+      elif running_time > formation_change_time * 7:
         print('Formation type : ' + GREEN + 'Hovering.. 1m' + END)
     
     ros.mean_pos_publish()
