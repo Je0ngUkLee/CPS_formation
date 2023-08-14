@@ -73,6 +73,10 @@ class ROS():
     self.robot1_setpoint_pub = rospy.Publisher('UAV1/mavros/setpoint_position/local', PoseStamped, queue_size = 1)
     self.robot2_setpoint_pub = rospy.Publisher('UAV2/mavros/setpoint_position/local', PoseStamped, queue_size = 1)
     self.robot3_setpoint_pub = rospy.Publisher('UAV3/mavros/setpoint_position/local', PoseStamped, queue_size = 1)
+    
+    self.robot1_mean_pos_pub = rospy.Publisher('UAV1/mean_pos', PoseStamped, queue_size = 1)
+    self.robot2_mean_pos_pub = rospy.Publisher('UAV2/mean_pos', PoseStamped, queue_size = 1)
+    self.robot3_mean_pos_pub = rospy.Publisher('UAV3/mean_pos', PoseStamped, queue_size = 1)
 
     
     
@@ -440,6 +444,48 @@ class ROS():
     self.robot1_setpoint_pub.publish(pub_set_point_1)
     self.robot2_setpoint_pub.publish(pub_set_point_2)
     self.robot3_setpoint_pub.publish(pub_set_point_3)
+    
+  def mean_pos_publish(self):
+    mean_pos_1 = PoseStamped()
+    mean_pos_2 = PoseStamped()
+    mean_pos_3 = PoseStamped()
+    
+    mean_pos_1.header.frame_id = 'map'
+    mean_pos_1.header.stamp = rospy.Time.now()
+    
+    mean_pos_2.header.frame_id = 'map'
+    mean_pos_2.header.stamp = rospy.Time.now()
+    
+    mean_pos_3.header.frame_id = 'map'
+    mean_pos_3.header.stamp = rospy.Time.now()
+    
+    mean_pos_1.pose.position.x    = self.robot1_local_pos_mean[0]
+    mean_pos_1.pose.position.y    = self.robot1_local_pos_mean[1]
+    mean_pos_1.pose.position.z    = self.robot1_local_pos_mean[2]
+    mean_pos_1.pose.orientation.x = self.robot1_local_pos_mean[3]
+    mean_pos_1.pose.orientation.y = self.robot1_local_pos_mean[4]
+    mean_pos_1.pose.orientation.z = self.robot1_local_pos_mean[5]
+    mean_pos_1.pose.orientation.w = self.robot1_local_pos_mean[6]
+    
+    mean_pos_2.pose.position.x    = self.robot2_local_pos_mean[0]
+    mean_pos_2.pose.position.y    = self.robot2_local_pos_mean[1]
+    mean_pos_2.pose.position.z    = self.robot2_local_pos_mean[2]
+    mean_pos_2.pose.orientation.x = self.robot2_local_pos_mean[3]
+    mean_pos_2.pose.orientation.y = self.robot2_local_pos_mean[4]
+    mean_pos_2.pose.orientation.z = self.robot2_local_pos_mean[5]
+    mean_pos_2.pose.orientation.w = self.robot2_local_pos_mean[6]
+
+    mean_pos_3.pose.position.x    = self.robot3_local_pos_mean[0]
+    mean_pos_3.pose.position.y    = self.robot3_local_pos_mean[1]
+    mean_pos_3.pose.position.z    = self.robot3_local_pos_mean[2]
+    mean_pos_3.pose.orientation.x = self.robot3_local_pos_mean[3]
+    mean_pos_3.pose.orientation.y = self.robot3_local_pos_mean[4]
+    mean_pos_3.pose.orientation.z = self.robot3_local_pos_mean[5]
+    mean_pos_3.pose.orientation.w = self.robot3_local_pos_mean[6]
+    
+    self.robot1_mean_pos_pub.publish(mean_pos_1)
+    self.robot2_mean_pos_pub.publish(mean_pos_2)
+    self.robot3_mean_pos_pub.publish(mean_pos_3)
         
   
 class Formation():
@@ -782,6 +828,8 @@ def main():
         print('Formation type : ' + GREEN + 'Formation 1' + END)
       elif running_time > formation_change_time * 6:
         print('Formation type : ' + GREEN + 'Hovering.. 1m' + END)
+    
+    ros.mean_pos_publish()
     
     formation.ReferenceTrajectoryGenerator(t)
     robot1_ref, robot2_ref, robot3_ref = formation.UAV_TrajectoryGenerator(running_time, formation_change_time, count)
